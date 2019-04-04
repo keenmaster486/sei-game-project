@@ -31,4 +31,7 @@ Special items:<br>
 
 Raygun Cartridge ------------------------------------------- 10 extra shots<br>
 Cup of coffee ---------------------------------------------- 1/100 of an extra life (i.e. 100 of these gets you a 1UP)<br>
-Starbucks Ultra-Quadruple-Shot Nitro Espresso Thing -------- Extra Life
+Starbucks Ultra-Quadruple-Shot Nitro Espresso Supreme ------ Extra Life<br>
+
+
+Here's a mock-up of what the game will look like:
