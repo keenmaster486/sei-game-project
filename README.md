@@ -10,9 +10,9 @@ Arrow keys ------- Move around (left, right, look up, look down)<br>
 CTRL ------------- Jump<br>
 Spacebar --------- Fire raygun<br>
 
-You play as Glorp, an extraterrestrial being from the Planet Bloog who has been tasked with colonizing Earth's Moon.<br>
+You play as Glorp, an extraterrestrial being from the Planet Blorg who has been tasked with colonizing Earth's Moon.<br>
 Unfortunately, the guys over at Planet Fleeb had the same idea. Using your trusty Stun-o-Matic 50XR raygun,<br>
-you will fight off those Fleebian baddies and claim the Moon for Planet Bloog.<br>
+you will fight off those Fleebian baddies and claim the Moon for Planet Blorg.<br>
 
 Here are the items you can collect and their point values:<br>
 
