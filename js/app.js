@@ -32,14 +32,15 @@ let sy = 0;
 //Keyhandler var:
 const keys = [];
 
-class Player
+class Actor
 {
 	//NOTE: The canvas needs to already have been created
 	//in order for this class to work properly!
-	constructor(n, x, y, ns)
+	constructor(n, ir, x, y, ns)
 	{
 		//Name:
 		this.name = n;
+		this.imgroot = ir; //Will be something like "plr" or "enm"
 		//x and y starting position:
 		this.x = x;
 		this.y = y;
@@ -51,6 +52,8 @@ class Player
 		this.termvel = 8;
 		this.walkspeed = 4;
 		this.jumpspeed = -12;
+		this.xv = 0;
+		this.xa = 0;
 		this.yv = 0;
 		this.ya = 0;
 		this.dir = 1; //Default direction: right
@@ -65,10 +68,10 @@ class Player
 
 
 
-		for (let i = 0; i < 4; i++)
+		for (let i = 0; i < this.numsprites; i++)
 		{
 			//Needed because otherwise getImageData complains about security issues:
-			imgid = document.getElementById(`plr-img-0${i+1}`);
+			imgid = document.getElementById(`${this.imgroot}-img-0${i+1}`);
 			imgid.setAttribute('crossOrigin', 'Anonymous');
 			console.log(imgid.height, imgid.width);
 			ctx.drawImage(imgid, 0, 0, imgid.width*scaleX, imgid.height*scaleY);
@@ -113,7 +116,7 @@ class Player
 
 	handleInput()
 	{
-		if (keys["ArrowLeft"])
+		if (keys["ArrowLeft"] && this.x > 0)
 		{
 			this.x = this.x - this.walkspeed;
 			this.dir = -1;
@@ -138,10 +141,30 @@ class Player
 
 	increment()
 	{
-		this.ya = this.gravity;
-		this.yv = this.yv + this.ya;
-		if (this.yv > this.termvel) {this.yv = this.termvel;}
-		this.y = this.y + this.yv;
+		if (this.inWindow())
+		{
+			this.ya = this.gravity;
+			this.yv = this.yv + this.ya;
+			if (this.yv > this.termvel) {this.yv = this.termvel;}
+			this.y = this.y + this.yv;
+			//console.log(`Incremented ${this.name}`)
+		}
+		if (this.x < 0) {this.x = 0;}
+		if (this.y < 0)
+		{
+			this.y = 0;
+			this.yv = 1;
+		}
+	}
+
+	inWindow()
+	{
+		if (this.x+sx < 0 || this.x+sx + this.width > 319 || this.y+sy < 0 || this.y+sy + this.height > 199)
+		{
+			//console.log("not in window!");
+			return false;
+		}
+		return true;
 	}
 
 	animateWalk()
@@ -168,7 +191,37 @@ class Player
 		this.allowjump = false;
 		//console.log("JUMP");
 	}
+
+	activity(a)
+	{
+		//Makes the actor do something - to be used for enemies
+		//or for special things the player can do!
+		//Should be called every frame
+		
+		if (!this.inWindow) {return false;}
+		
+		if (a == 1)
+		{
+			//Default enemy activity
+			
+			if (!(this.xv == 1 || this.xv == -1)) {this.xv = 1;}
+
+			this.x = this.x + this.xv;
+			this.animateWalk();
+			if (!(counter % 120))
+			{
+				this.xv = -this.xv;
+				this.dir = this.xv/(Math.abs(this.xv));
+			}
+		}
+	}
 }
+
+
+
+
+
+
 
 class Tile
 {
@@ -283,7 +336,8 @@ class Level
 		//level class
 		//contains the level map and draws the tiles
 
-		this.player1 = new Player("Player 1", 0, 0, 1);
+		this.player1 = new Actor("Player 1", "plr", 0, 0, 4);
+		this.enemy1 = new Actor("Enemy 1", "plr", 150, 300	, 4);
 		this.backtiles = new Tiles("Background tiles");
 		
 		startKeyHandler();
@@ -300,9 +354,11 @@ class Level
 
 		this.getLevelData();
 
+		this.getBackgroundImage();
+	}
 
-
-
+	getBackgroundImage()
+	{
 		//Get background image (no transparent colors here!!!):
 		let imgData = ctx.getImageData(0, 0, 1, 1); //create an empty imgData object
 		let imgid = document.getElementById("bac-img-01") //for now
@@ -330,6 +386,15 @@ class Level
 			this.player1.yv = 0;
 			this.player1.ya = 0;
 			this.player1.allowjump = true;
+		}
+
+		if (tile.type == 1 && collideTop(this.enemy1, tile))
+		{
+			//console.log("collision!");
+			this.enemy1.y = tile.y - this.enemy1.height;
+			this.enemy1.yv = 0;
+			this.enemy1.ya = 0;
+			this.enemy1.allowjump = true;
 		}
 	}
 
@@ -392,6 +457,7 @@ class Level
 		this.drawBackground();
 		this.drawTiles();
 		this.player1.draw();
+		this.enemy1.draw();
 	}
 
 	drawBackground()
@@ -419,17 +485,18 @@ class Level
 
 	drawTiles()
 	{
-		//Figure out what section of tiles to draw:
-
-		//Draw the tiles:
+		//Draws whatever tiles are currently in the view window
+		//Plus one extra row or column on each side
 		let tempx = Math.floor(-sx/16);
 		let tempy = Math.floor(-sy/16);
-		for (let j = tempx; j < tempx+21; j++)
+		for (let j = tempx - 1; j < tempx+21; j++)
 		{
 			if (j > this.data[0].length-1) {break;}
-			for (let k = tempy; k < tempy+13; k++)
+			if (j < 0) {continue;}
+			for (let k = tempy - 1; k < tempy+13; k++)
 			{
 				if (k > this.data.length-1) {break;}
+				if (k < 0) {continue;}
 				this.backtiles.drawTile(this.data[k][j], j*16, k*16);
 				if (this.data[k][j] > 0)
 				{
@@ -442,6 +509,8 @@ class Level
 	incrementAll()
 	{
 		this.player1.increment();
+		this.enemy1.increment();
+		this.enemy1.activity(1);
 		this.handleScrolling();
 		this.incrementCounters();
 	}
@@ -449,7 +518,7 @@ class Level
 	incrementCounters()
 	{
 		counter++;
-		if (counter > 12) {counter = 1;}
+		if (counter > 120) {counter = 1;}
 	}
 
 	handleScrolling()
@@ -466,17 +535,17 @@ class Level
 		if (sx > 0) {sx = 0;}
 
 		//Vertical scrolling:
-		if (this.player1.yv > 1 || this.player1.allowjump)
-		{
+		//if (this.player1.yv > 1 || this.player1.allowjump)
+		//{
 			if ((this.player1.y + this.player1.height + sy) > 120)
 			{
 				sy = sy - this.player1.yv;
 			}
-			if ((this.player1.y + sy) < 80)
+			if ((this.player1.y + sy) < 60)
 			{
 				sy = sy + 4;
 			}
-		}
+		//}
 		if (sy > 0) {sy = 0;}
 	}
 
