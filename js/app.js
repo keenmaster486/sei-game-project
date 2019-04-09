@@ -349,11 +349,11 @@ class Level
 		this.name = n;
 		this.player1 = new Actor("Player 1", "plr", 0, 0, 4);
 		this.enemies = [
-			new Actor("Enemy 1", "plr", 0, 0, 4),
-			new Actor("Enemy 2", "plr", 150, 300, 4),
-			new Actor("Enemy 3", "plr", 100, 0, 4),
-			new Actor("Enemy 4", "plr", 100, 300, 4),
-			new Actor("Enemy 5", "plr", 300, 0, 4)
+			new Actor("Enemy 1", "enm", 0, 0, 4),
+			new Actor("Enemy 2", "enm", 150, 300, 4),
+			new Actor("Enemy 3", "enm", 100, 0, 4),
+			new Actor("Enemy 4", "enm", 100, 300, 4),
+			new Actor("Enemy 5", "enm", 300, 0, 4)
 		];
 		this.backtiles = new Tiles("Background tiles");
 		
@@ -399,11 +399,11 @@ class Level
 	{
 		this.player1 = new Actor("Player 1", "plr", 0, 0, 4);
 		this.enemies = [
-			new Actor("Enemy 1", "plr", 0, 0, 4),
-			new Actor("Enemy 2", "plr", 150, 300, 4),
-			new Actor("Enemy 3", "plr", 100, 0, 4),
-			new Actor("Enemy 4", "plr", 100, 300, 4),
-			new Actor("Enemy 5", "plr", 300, 0, 4)
+			new Actor("Enemy 1", "enm", 0, 0, 4),
+			new Actor("Enemy 2", "enm", 150, 300, 4),
+			new Actor("Enemy 3", "enm", 100, 0, 4),
+			new Actor("Enemy 4", "enm", 100, 300, 4),
+			new Actor("Enemy 5", "enm", 300, 0, 4)
 		];
 		this.backtiles = new Tiles("Background tiles");
 		this.getLevelData();
@@ -417,7 +417,7 @@ class Level
 	{
 		//Get background image (no transparent colors here!!!):
 		let imgData = ctx.getImageData(0, 0, 1, 1); //create an empty imgData object
-		let imgid = document.getElementById("bac-img-01") //for now
+		let imgid = document.getElementById("bac-img-02") //for now
 		imgid.setAttribute('crossOrigin', 'Anonymous');
 		ctx.drawImage(imgid, 0, 0, imgid.width*scaleX, imgid.height*scaleY);
 
