@@ -1,6 +1,8 @@
 console.log("app.js loaded test");
 
 
+//=======SET UP SOME STUFF BEFOREHAND=======
+
 //These all have to be global
 const canvas = document.getElementById('main-canvas');
 console.log(canvas) // cool now we have the canvas
@@ -31,6 +33,14 @@ let sy = 0;
 
 //Keyhandler var:
 const keys = [];
+
+
+
+
+
+
+
+//=======CLASSES GO BELOW=======
 
 class Actor
 {
@@ -111,6 +121,7 @@ class Actor
 		overlayCanvas.height = this.height*scaleY;
 		overlayCanvas.getContext("2d").putImageData(this.sprites[s], 0, 0);
 		ctx.drawImage(overlayCanvas, (x + sx)*scaleX, (y + sy)*scaleY);
+		//overlayCanvas.parentNode.removeChild(overlayCanvas);
 		//ctx.putImageData(this.sprites[s], (x*scaleX) + sx, (y*scaleY) + sy);
 	}
 
@@ -331,21 +342,27 @@ class Tiles
 
 class Level
 {
-	constructor()
+	constructor(n)
 	{
 		//level class
 		//contains the level map and draws the tiles
-
+		this.name = n;
 		this.player1 = new Actor("Player 1", "plr", 0, 0, 4);
-		this.enemy1 = new Actor("Enemy 1", "plr", 150, 300	, 4);
+		this.enemies = [
+			new Actor("Enemy 1", "plr", 0, 0, 4),
+			new Actor("Enemy 2", "plr", 150, 300, 4),
+			new Actor("Enemy 3", "plr", 100, 0, 4),
+			new Actor("Enemy 4", "plr", 100, 300, 4),
+			new Actor("Enemy 5", "plr", 300, 0, 4)
+		];
 		this.backtiles = new Tiles("Background tiles");
 		
-		startKeyHandler();
+		//startKeyHandler();
 		
 		const itself = this;
 
 		//Set up everything that needs to happen every frame:
-		setInterval(function()
+		this.interval = setInterval(function()
 		{
 			itself.handleKeyEvents();
 			itself.drawAll();
@@ -355,6 +372,45 @@ class Level
 		this.getLevelData();
 
 		this.getBackgroundImage();
+	}
+
+	pause()
+	{
+		//Pause the level
+		clearInterval(this.interval);
+		//clearCanvas();
+	}
+
+	resume()
+	{
+		clearInterval(this.interval);
+		clearCanvas();
+		const itself = this;
+		this.interval = setInterval(function()
+		{
+			itself.handleKeyEvents();
+			itself.drawAll();
+			itself.incrementAll();
+		}, 1000/framerate);
+		counter = 0;
+	}
+
+	reset()
+	{
+		this.player1 = new Actor("Player 1", "plr", 0, 0, 4);
+		this.enemies = [
+			new Actor("Enemy 1", "plr", 0, 0, 4),
+			new Actor("Enemy 2", "plr", 150, 300, 4),
+			new Actor("Enemy 3", "plr", 100, 0, 4),
+			new Actor("Enemy 4", "plr", 100, 300, 4),
+			new Actor("Enemy 5", "plr", 300, 0, 4)
+		];
+		this.backtiles = new Tiles("Background tiles");
+		this.getLevelData();
+		this.getBackgroundImage();
+		sx = 0;
+		sy = 0;
+		clearCanvas();
 	}
 
 	getBackgroundImage()
@@ -388,14 +444,18 @@ class Level
 			this.player1.allowjump = true;
 		}
 
-		if (tile.type == 1 && collideTop(this.enemy1, tile))
+		for (let i = 0; i < this.enemies.length; i++)
 		{
-			//console.log("collision!");
-			this.enemy1.y = tile.y - this.enemy1.height;
-			this.enemy1.yv = 0;
-			this.enemy1.ya = 0;
-			this.enemy1.allowjump = true;
+			if (tile.type == 1 && collideTop(this.enemies[i], tile))
+			{
+				//console.log("collision!");
+				this.enemies[i].y = tile.y - this.enemies[i].height;
+				this.enemies[i].yv = 0;
+				this.enemies[i].ya = 0;
+				this.enemies[i].allowjump = true;
+			}
 		}
+		
 	}
 
 	getLevelData()
@@ -457,7 +517,10 @@ class Level
 		this.drawBackground();
 		this.drawTiles();
 		this.player1.draw();
-		this.enemy1.draw();
+		for (let i = 0; i < this.enemies.length; i++)
+		{
+			this.enemies[i].draw();
+		}
 	}
 
 	drawBackground()
@@ -493,7 +556,7 @@ class Level
 		{
 			if (j > this.data[0].length-1) {break;}
 			if (j < 0) {continue;}
-			for (let k = tempy - 1; k < tempy+13; k++)
+			for (let k = tempy - 1; k < tempy+14; k++)
 			{
 				if (k > this.data.length-1) {break;}
 				if (k < 0) {continue;}
@@ -509,8 +572,11 @@ class Level
 	incrementAll()
 	{
 		this.player1.increment();
-		this.enemy1.increment();
-		this.enemy1.activity(1);
+		for (let i = 0; i < this.enemies.length; i++)
+		{
+			this.enemies[i].increment();
+			this.enemies[i].activity(1);
+		}
 		this.handleScrolling();
 		this.incrementCounters();
 	}
@@ -555,6 +621,19 @@ class Level
 	}
 }
 
+
+
+
+
+
+
+
+
+
+//=======GLOBAL FUNCTIONS GO BELOW=======
+
+
+
 function clearCanvas()
 {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -589,9 +668,6 @@ function isLoaded()
 {
   return document.readyState == "complete";
 }
-
-
-
 
 //COLLISION FUNCTIONS:
 function collideAny(obj1, obj2)
@@ -633,4 +709,17 @@ function collideTop(obj1, obj2)
 
 
 
-const testlevel = new Level();
+
+
+//=======MAIN CODE GOES BELOW=======
+
+
+//Note that this is all the main code does - everything else is done in the classes
+startKeyHandler();
+const testlevel = new Level("Test Level 1");
+
+
+
+
+
+
