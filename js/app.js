@@ -1,4 +1,4 @@
-console.log("app.js loaded");
+console.log("app.js loaded test");
 
 
 //These all have to be global
@@ -20,6 +20,7 @@ ctx.imageSmoothingEnabled = false;
 
 //Some more global variables:
 const framerate = 30;
+let counter = 1; //This counter will go from 1 to 12 and then reset, for easy factors
 
 //Scrolling variables
 //These are relative to the top left corner of the canvas (0, 0)
@@ -47,11 +48,12 @@ class Player
 
 		//Physics vars:
 		this.gravity = 1;
-		this.termvel = 6;
+		this.termvel = 8;
 		this.walkspeed = 4;
 		this.jumpspeed = -12;
 		this.yv = 0;
 		this.ya = 0;
+		this.dir = 1; //Default direction: right
 
 		this.numsprites = ns;
 		this.frame = 0;
@@ -59,13 +61,14 @@ class Player
 		//Get image data:
 		this.sprites = [];
 		let imgData = ctx.getImageData(0, 0, 1, 1); //create an empty imgData object
-		let imgid = document.getElementById("plr-img-01") //for now
+		let imgid = undefined;   //document.getElementById("plr-img-01") //for now
 
 
 
-		for (let i = 0; i < 1; i++)
+		for (let i = 0; i < 4; i++)
 		{
 			//Needed because otherwise getImageData complains about security issues:
+			imgid = document.getElementById(`plr-img-0${i+1}`);
 			imgid.setAttribute('crossOrigin', 'Anonymous');
 			console.log(imgid.height, imgid.width);
 			ctx.drawImage(imgid, 0, 0, imgid.width*scaleX, imgid.height*scaleY);
@@ -113,10 +116,14 @@ class Player
 		if (keys["ArrowLeft"])
 		{
 			this.x = this.x - this.walkspeed;
+			this.dir = -1;
+			this.animateWalk();
 		}
 		if (keys["ArrowRight"])
 		{
 			this.x = this.x + this.walkspeed;
+			this.dir = 1;
+			this.animateWalk();
 		}
 		if (keys["Control"] && this.allowjump)
 		{
@@ -126,7 +133,7 @@ class Player
 
 	draw()
 	{
-		this.drawSprite(0, this.x, this.y);
+		this.drawSprite(this.frame, this.x, this.y);
 	}
 
 	increment()
@@ -137,12 +144,29 @@ class Player
 		this.y = this.y + this.yv;
 	}
 
+	animateWalk()
+	{
+		if (!!(counter % 3)) {return false;}
+		if (this.dir == 1)
+		{
+			if (this.frame == 0) {this.frame = 2;}
+			else if (this.frame == 2) {this.frame = 0;}
+			else {this.frame = 0;}
+		}
+		if (this.dir == -1)
+		{
+			if (this.frame == 1) {this.frame = 3;}
+			else if (this.frame == 3) {this.frame = 1;}
+			else {this.frame = 1;}
+		}
+	}
+
 	jump()
 	{
 		this.yv = this.jumpspeed;
 		this.increment();
 		this.allowjump = false;
-		console.log("JUMP");
+		//console.log("JUMP");
 	}
 }
 
@@ -266,6 +290,7 @@ class Level
 		
 		const itself = this;
 
+		//Set up everything that needs to happen every frame:
 		setInterval(function()
 		{
 			itself.handleKeyEvents();
@@ -274,6 +299,18 @@ class Level
 		}, 1000/framerate);
 
 		this.getLevelData();
+
+
+
+
+		//Get background image (no transparent colors here!!!):
+		let imgData = ctx.getImageData(0, 0, 1, 1); //create an empty imgData object
+		let imgid = document.getElementById("bac-img-01") //for now
+		imgid.setAttribute('crossOrigin', 'Anonymous');
+		ctx.drawImage(imgid, 0, 0, imgid.width*scaleX, imgid.height*scaleY);
+
+		imgData = ctx.getImageData(0, 0, 320*scaleX, 200*scaleY);
+		this.backimg = imgData;
 	}
 
 	checkCollisionWithTile(tile)
@@ -285,8 +322,8 @@ class Level
 		//obj is the object to check collision with
 		//could be a player or enemy class
 		//all it needs to have is x, y and physics vars to access
-
-		if ((this.player1.y > tile.y - this.player1.height) && (this.player1.x + this.player1.width > tile.x && this.player1.x < tile.x + 16) && tile.type == 1)
+		//if ((this.player1.y > tile.y - this.player1.height) && (this.player1.x + this.player1.width > tile.x && this.player1.x < tile.x + 16) && tile.type == 1)
+		if (tile.type == 1 && collideTop(this.player1, tile))
 		{
 			//console.log("collision!");
 			this.player1.y = tile.y - this.player1.height;
@@ -304,28 +341,28 @@ class Level
 		this.data = [
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,64,65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 1, 2, 3, 3, 3, 4, 3, 3, 3, 4, 3, 4, 3, 3, 4, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[21,22,23,22,23,22,23,22,23,22,23,22,23,22,23,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[61,62,63,62,63,62,63,62,63,62,63,62,63,62,63,63,64,65, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,64,65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 1, 2, 3, 4, 3, 4, 3, 4, 5,61,62,63,64,65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,64,65, 0, 0,21,22,23,22,23,22,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,62,63,62,63,64,65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,64,65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 1, 2, 3, 3, 3, 4, 3, 3, 3, 4, 3, 4, 3, 3, 4, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[21,22,23,22,23,22,23,22,23,22,23,22,23,22,23,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[61,62,63,62,63,62,63,62,63,62,63,62,63,62,63,63,64,65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 		]
 	}
 
@@ -352,8 +389,32 @@ class Level
 		// this.backtiles.drawTile(63, 48, 176);
 		// this.backtiles.drawTile(64, 64, 176);
 		// //=============================
+		this.drawBackground();
 		this.drawTiles();
 		this.player1.draw();
+	}
+
+	drawBackground()
+	{
+		//Checks global sx,sy variables to determine scrolling position of background
+		
+		//Note: the following math works because *everything* is negative! Don't change signs!
+		let temp = 0;
+		
+		let sxnew = Math.floor(sx/2);
+		let synew = Math.floor(sy/2);
+
+		temp = Math.floor(sxnew/320);
+		if (temp != 0) {temp++;}
+		let tempsx = sxnew - (temp*320);
+		temp = Math.floor(synew/200);
+		if (temp != 0) {temp++;}
+		let tempsy = synew - (temp*200);
+		
+		ctx.putImageData(this.backimg, tempsx*scaleX, tempsy*scaleY);
+		ctx.putImageData(this.backimg, (tempsx+320)*scaleX, (tempsy)*scaleY);
+		ctx.putImageData(this.backimg, (tempsx)*scaleX, (tempsy+200)*scaleY);
+		ctx.putImageData(this.backimg, (tempsx+320)*scaleX, (tempsy+200)*scaleY);
 	}
 
 	drawTiles()
@@ -361,14 +422,18 @@ class Level
 		//Figure out what section of tiles to draw:
 
 		//Draw the tiles:
-		for (let j = 0; j < 20; j++)
+		let tempx = Math.floor(-sx/16);
+		let tempy = Math.floor(-sy/16);
+		for (let j = tempx; j < tempx+21; j++)
 		{
-			for (let k = 0; k < 12; k++)
+			if (j > this.data[0].length-1) {break;}
+			for (let k = tempy; k < tempy+13; k++)
 			{
+				if (k > this.data.length-1) {break;}
 				this.backtiles.drawTile(this.data[k][j], j*16, k*16);
 				if (this.data[k][j] > 0)
 				{
-					this.checkCollisionWithTile({x: j*16, y: k*16, type: this.backtiles.tiles[this.data[k][j]].type});
+					this.checkCollisionWithTile({x: j*16, y: k*16, width:16, height:16, type: this.backtiles.tiles[this.data[k][j]].type});
 				}
 			}
 		}
@@ -378,19 +443,41 @@ class Level
 	{
 		this.player1.increment();
 		this.handleScrolling();
+		this.incrementCounters();
+	}
+
+	incrementCounters()
+	{
+		counter++;
+		if (counter > 12) {counter = 1;}
 	}
 
 	handleScrolling()
 	{
-		if ((this.player1.x+sx) > 150)
+		//Horizontal scrolling:
+		if ((this.player1.x + this.player1.width + sx) > 180)
 		{
 			sx = sx - this.player1.walkspeed;
 		}
-		if ((this.player1.x+sx) < 50)
+		if ((this.player1.x + sx) < 140)
 		{
 			sx = sx + this.player1.walkspeed;
 		}
 		if (sx > 0) {sx = 0;}
+
+		//Vertical scrolling:
+		if (this.player1.yv > 1 || this.player1.allowjump)
+		{
+			if ((this.player1.y + this.player1.height + sy) > 120)
+			{
+				sy = sy - this.player1.yv;
+			}
+			if ((this.player1.y + sy) < 80)
+			{
+				sy = sy + 4;
+			}
+		}
+		if (sy > 0) {sy = 0;}
 	}
 
 	handleKeyEvents()
@@ -436,6 +523,43 @@ function isLoaded()
 
 
 
+
+//COLLISION FUNCTIONS:
+function collideAny(obj1, obj2)
+{
+	//Checks whether obj1 is colliding at all with obj2
+	//obj1 and obj2 should have the following properties:
+	//x, y, width, height
+
+	//horizontal checks:
+	if ((obj1.x + obj1.width > obj2.x) && (obj1.x < obj2.x + obj2.width))
+	{
+		//vertical checks:
+		if ((obj1.y + obj1.height > obj2.y) && (obj1.y < obj2.y + obj2.height))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+function collideTop(obj1, obj2)
+{
+	//Checks whether the bottom of obj1 is colliding with the top of obj2
+	//obj1 and obj2 should have the following properties:
+	//x, y, width, height
+
+	//horizontal checks:
+	if ((obj1.x + obj1.width > obj2.x) && (obj1.x < obj2.x + obj2.width))
+	{
+		//vertical checks:
+		if ((obj1.y + obj1.height > obj2.y) && (obj1.y + obj1.height < obj2.y + (obj2.height/2)))
+		{
+			return true;
+		}
+	}
+	return false;
+}
 
 
 
