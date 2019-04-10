@@ -34,6 +34,7 @@ let sy = 0;
 //Keyhandler var:
 const keys = [];
 
+let bullets = [];
 
 
 
@@ -41,6 +42,26 @@ const keys = [];
 
 
 //=======CLASSES GO BELOW=======
+
+class Bullet
+{
+	constructor(x, y, d)
+	{
+		this.x = x;
+		this.y = y;
+		this.dir = d;
+	}
+	increment()
+	{
+		this.x = this.x + (6*this.dir);
+		if (this.x+sx < 0 || this.x+sx > 320)
+		{
+			this.x = 0;
+			this.y = 0;
+			this.dir = 0;
+		}
+	}
+}
 
 class Actor
 {
@@ -62,6 +83,8 @@ class Actor
 		this.termvel = 8;
 		this.walkspeed = 4;
 		this.jumpspeed = -12;
+		this.allowjump = false;
+		this.allowshoot = true;
 		this.xv = 0;
 		this.xa = 0;
 		this.yv = 0;
@@ -143,6 +166,16 @@ class Actor
 		{
 			this.jump();
 		}
+		if (keys[" "] && this.allowshoot)
+		{
+			//console.log("space");
+			this.shoot();
+			this.allowshoot = false;
+		}
+		if (!keys[" "])
+		{
+			this.allowshoot = true;
+		}
 	}
 
 	draw()
@@ -203,6 +236,11 @@ class Actor
 		//console.log("JUMP");
 	}
 
+	shoot()
+	{
+		bullets[bullets.length] = new Bullet(this.x + this.width, this.y + 7, this.dir)
+	}
+
 	activity(a)
 	{
 		//Makes the actor do something - to be used for enemies
@@ -236,10 +274,11 @@ class Actor
 
 class Tile
 {
-	constructor(d, t)
+	constructor(d, t, i)
 	{
 		this.data = d;
 		this.type = t;
+		this.inf = i;
 	}
 }
 
@@ -277,7 +316,7 @@ class Tiles
 		// 	type: undefined,
 		// };
 		this.tiles = [];
-		for (let i = 0; i < 240; i++)
+		for (let i = 0; i < 241; i++)
 		{
 			tempy = 16*(Math.floor(i/20));
 			tempx = 16 * (i - ((tempy/16)*20));
@@ -303,8 +342,13 @@ class Tiles
 			}
 			//blanktile.data = imgData;
 			//blanktile.type = 0;
-			this.tiles[i] = new Tile(imgData, 0);
-			if (i > 20 && i < 30) {this.tiles[i].type = 1;}
+			this.tiles[i] = new Tile(imgData, 0, 0);
+			if (i > 20 && i < 30) {this.tiles[i].type = 2;} //block on top
+			if (i > 5 && i <= 20)
+			{
+				this.tiles[i].type = 5;
+				this.tiles[i].inf = 100;
+			} //item
 			//this.tiles[i].data = imgData;
 			//this.tiles[i].type = 0;
 		}
@@ -435,7 +479,7 @@ class Level
 		//could be a player or enemy class
 		//all it needs to have is x, y and physics vars to access
 		//if ((this.player1.y > tile.y - this.player1.height) && (this.player1.x + this.player1.width > tile.x && this.player1.x < tile.x + 16) && tile.type == 1)
-		if (tile.type == 1 && collideTop(this.player1, tile))
+		if (tile.type == 2 && collideTop(this.player1, tile))
 		{
 			//console.log("collision!");
 			this.player1.y = tile.y - this.player1.height;
@@ -443,10 +487,14 @@ class Level
 			this.player1.ya = 0;
 			this.player1.allowjump = true;
 		}
+		if (tile.type == 5 && collideAny(this.player1, tile))
+		{
+			return true;
+		}
 
 		for (let i = 0; i < this.enemies.length; i++)
 		{
-			if (tile.type == 1 && collideTop(this.enemies[i], tile))
+			if (tile.type == 2 && collideTop(this.enemies[i], tile))
 			{
 				//console.log("collision!");
 				this.enemies[i].y = tile.y - this.enemies[i].height;
@@ -455,7 +503,7 @@ class Level
 				this.enemies[i].allowjump = true;
 			}
 		}
-		
+		return false;
 	}
 
 	getLevelData()
@@ -466,9 +514,9 @@ class Level
 		this.data = [
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,64,65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 6, 6, 0, 0, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,64,65, 0, 6, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 1, 2, 3, 3, 3, 4, 3, 3, 3, 4, 3, 4, 3, 3, 4, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[21,22,23,22,23,22,23,22,23,22,23,22,23,22,23,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -516,6 +564,7 @@ class Level
 		// //=============================
 		this.drawBackground();
 		this.drawTiles();
+		this.handleBullets();
 		this.player1.draw();
 		for (let i = 0; i < this.enemies.length; i++)
 		{
@@ -552,6 +601,7 @@ class Level
 		//Plus one extra row or column on each side
 		let tempx = Math.floor(-sx/16);
 		let tempy = Math.floor(-sy/16);
+		let temp = undefined;
 		for (let j = tempx - 1; j < tempx+21; j++)
 		{
 			if (j > this.data[0].length-1) {break;}
@@ -563,8 +613,27 @@ class Level
 				this.backtiles.drawTile(this.data[k][j], j*16, k*16);
 				if (this.data[k][j] > 0)
 				{
-					this.checkCollisionWithTile({x: j*16, y: k*16, width:16, height:16, type: this.backtiles.tiles[this.data[k][j]].type});
+					temp = this.checkCollisionWithTile({x: j*16, y: k*16, width:16, height:16, type: this.backtiles.tiles[this.data[k][j]].type});
+					if (temp) //item to be picked up
+					{
+						this.data[k][j] = 0;
+						//console.log("Picked up an item");
+					}
 				}
+			}
+		}
+	}
+
+	handleBullets()
+	{
+		for (let i = 0; i < bullets.length; i++)
+		{
+			this.backtiles.drawTile(240, bullets[i].x, bullets[i].y)
+			bullets[i].increment();
+			if (bullets[i].dir == 0)
+			{
+				//Destroy a bullet when it exits the screen
+				bullets.splice(i, 1);
 			}
 		}
 	}
@@ -577,6 +646,7 @@ class Level
 			this.enemies[i].increment();
 			this.enemies[i].activity(1);
 		}
+
 		this.handleScrolling();
 		this.incrementCounters();
 	}
