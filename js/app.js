@@ -49,6 +49,8 @@ class Bullet
 	{
 		this.x = x;
 		this.y = y;
+		this.width = 16;
+		this.height = 16;
 		this.dir = d;
 	}
 	increment()
@@ -90,6 +92,7 @@ class Actor
 		this.yv = 0;
 		this.ya = 0;
 		this.dir = 1; //Default direction: right
+		this.alive = true;
 
 		this.numsprites = ns;
 		this.frame = 0;
@@ -150,6 +153,8 @@ class Actor
 
 	handleInput()
 	{
+		if (!this.alive) {return false;}
+
 		if (keys["ArrowLeft"] && this.x > 0)
 		{
 			this.x = this.x - this.walkspeed;
@@ -185,7 +190,7 @@ class Actor
 
 	increment()
 	{
-		if (this.inWindow())
+		if (this.inWindow() && this.alive)
 		{
 			this.ya = this.gravity;
 			this.yv = this.yv + this.ya;
@@ -193,6 +198,7 @@ class Actor
 			this.y = this.y + this.yv;
 			//console.log(`Incremented ${this.name}`)
 		}
+		
 		if (this.x < 0) {this.x = 0;}
 		if (this.y < 0)
 		{
@@ -213,7 +219,7 @@ class Actor
 
 	animateWalk()
 	{
-		if (!!(counter % 3)) {return false;}
+		if (!!(counter % 3) || !this.alive) {return false;}
 		if (this.dir == 1)
 		{
 			if (this.frame == 0) {this.frame = 2;}
@@ -238,7 +244,31 @@ class Actor
 
 	shoot()
 	{
-		bullets[bullets.length] = new Bullet(this.x + this.width, this.y + 7, this.dir)
+		if (this.dir > 0)
+		{
+			bullets[bullets.length] = new Bullet(this.x + this.width, this.y + 5, this.dir)
+		}
+		else if (this.dir < 0)
+		{
+			bullets[bullets.length] = new Bullet(this.x - 16, this.y + 5, this.dir)
+		}
+	}
+
+	kill(flag)
+	{
+		//Kills the actor
+		//The flag determines what kind of death the actor should die
+		if (flag == 1)
+		{
+			//Player death:
+			this.alive = false;
+		}
+		else
+		{
+			//Default death case (used for enemies):
+			this.alive = false;
+			this.frame = 4;
+		}
 	}
 
 	activity(a)
@@ -247,7 +277,7 @@ class Actor
 		//or for special things the player can do!
 		//Should be called every frame
 		
-		if (!this.inWindow) {return false;}
+		if (!this.inWindow || !this.alive) {return false;}
 		
 		if (a == 1)
 		{
@@ -393,11 +423,11 @@ class Level
 		this.name = n;
 		this.player1 = new Actor("Player 1", "plr", 0, 0, 4);
 		this.enemies = [
-			new Actor("Enemy 1", "enm", 0, 0, 4),
-			new Actor("Enemy 2", "enm", 150, 300, 4),
-			new Actor("Enemy 3", "enm", 100, 0, 4),
-			new Actor("Enemy 4", "enm", 100, 300, 4),
-			new Actor("Enemy 5", "enm", 300, 0, 4)
+			new Actor("Enemy 1", "enm", 50, 0, 5),
+			new Actor("Enemy 2", "enm", 150, 300, 5),
+			new Actor("Enemy 3", "enm", 100, 0, 5),
+			new Actor("Enemy 4", "enm", 100, 300, 5),
+			new Actor("Enemy 5", "enm", 300, 0, 5)
 		];
 		this.backtiles = new Tiles("Background tiles");
 		
@@ -443,18 +473,20 @@ class Level
 	{
 		this.player1 = new Actor("Player 1", "plr", 0, 0, 4);
 		this.enemies = [
-			new Actor("Enemy 1", "enm", 0, 0, 4),
-			new Actor("Enemy 2", "enm", 150, 300, 4),
-			new Actor("Enemy 3", "enm", 100, 0, 4),
-			new Actor("Enemy 4", "enm", 100, 300, 4),
-			new Actor("Enemy 5", "enm", 300, 0, 4)
+			new Actor("Enemy 1", "enm", 50, 0, 5),
+			new Actor("Enemy 2", "enm", 150, 300, 5),
+			new Actor("Enemy 3", "enm", 100, 0, 5),
+			new Actor("Enemy 4", "enm", 100, 300, 5),
+			new Actor("Enemy 5", "enm", 300, 0, 5)
 		];
 		this.backtiles = new Tiles("Background tiles");
 		this.getLevelData();
 		this.getBackgroundImage();
 		sx = 0;
 		sy = 0;
+		endKeyHandler();
 		clearCanvas();
+		startKeyHandler();
 	}
 
 	getBackgroundImage()
@@ -514,14 +546,14 @@ class Level
 		this.data = [
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 6, 6, 0, 0, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 6, 6, 0, 0, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,64,65, 0, 6, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,64,65, 0, 6, 0, 6, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 1, 2, 3, 3, 3, 4, 3, 3, 3, 4, 3, 4, 3, 3, 4, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[21,22,23,22,23,22,23,22,23,22,23,22,23,22,23,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[61,62,63,62,63,62,63,62,63,62,63,62,63,62,63,63,64,65, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 0, 0, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,64,65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -530,7 +562,7 @@ class Level
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,62,63,62,63,64,65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,21,22,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0,21,22,23,24,25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,61,62,63,64,65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			[ 1, 2, 3, 3, 3, 4, 3, 3, 3, 4, 3, 4, 3, 3, 4, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -542,26 +574,6 @@ class Level
 	drawAll()
 	{
 		clearCanvas();
-
-		// //=======SOME TEST CODE=======
-		// this.backtiles.drawTile(0, 0, 144);
-		// this.backtiles.drawTile(1, 16, 144);
-		// this.backtiles.drawTile(2, 32, 144);
-		// this.backtiles.drawTile(3, 48, 144);
-		// this.backtiles.drawTile(4, 64, 144);
-
-		// this.backtiles.drawTile(20, 0, 160);
-		// this.backtiles.drawTile(21, 16, 160);
-		// this.backtiles.drawTile(22, 32, 160);
-		// this.backtiles.drawTile(23, 48, 160);
-		// this.backtiles.drawTile(24, 64, 160);
-
-		// this.backtiles.drawTile(60, 0, 176);
-		// this.backtiles.drawTile(61, 16, 176);
-		// this.backtiles.drawTile(62, 32, 176);
-		// this.backtiles.drawTile(63, 48, 176);
-		// this.backtiles.drawTile(64, 64, 176);
-		// //=============================
 		this.drawBackground();
 		this.drawTiles();
 		this.handleBullets();
@@ -569,6 +581,28 @@ class Level
 		for (let i = 0; i < this.enemies.length; i++)
 		{
 			this.enemies[i].draw();
+			//Check collision with player:
+			if (collideAny(this.player1, this.enemies[i]) && this.enemies[i].alive)
+			{
+				//Player has collided with this enemy!
+				//Kill the player:
+				this.player1.kill(1);
+				//Tell the player he died:
+				alert("You died! Click OK to try again");
+				//Reset the level:
+				this.reset();
+			}
+			//Check collision with bullets:
+			for (let j = 0; j < bullets.length; j++)
+			{
+				if (collideAny(this.enemies[i], bullets[j]) && this.enemies[i].alive)
+				{
+					//Enemy is colliding with bullet!
+					//Change enemy direction to 0 and frame to "dead":
+					this.enemies[i].kill(0);
+					bullets.splice(j, 1);
+				}
+			}
 		}
 	}
 
@@ -643,8 +677,11 @@ class Level
 		this.player1.increment();
 		for (let i = 0; i < this.enemies.length; i++)
 		{
-			this.enemies[i].increment();
-			this.enemies[i].activity(1);
+			if (this.enemies[i].alive)
+			{
+				this.enemies[i].increment();
+				this.enemies[i].activity(1);
+			}
 		}
 
 		this.handleScrolling();
@@ -721,7 +758,11 @@ function startKeyHandler()
 	});
 }
 
-
+function endKeyHandler()
+{
+	$('html').off("keydown");
+	$('html').off("keyup");
+}
 
 function applyScalingFactor()
 {
@@ -777,7 +818,15 @@ function collideTop(obj1, obj2)
 }
 
 
-
+function startMusic()
+{
+	window.music = new Audio("src/MUSIC/ALLOYRUN.MP3");
+	$('html').on('click', function()
+	{
+		window.music.play();
+		window.music.loop = true;
+	});
+}
 
 
 
@@ -787,6 +836,7 @@ function collideTop(obj1, obj2)
 //Note that this is all the main code does - everything else is done in the classes
 startKeyHandler();
 const testlevel = new Level("Test Level 1");
+startMusic();
 
 
 
