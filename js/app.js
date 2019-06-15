@@ -32,7 +32,7 @@ let sx = 0;
 let sy = 0;
 
 //Keyhandler var:
-const keys = [];
+let keys = [];
 
 let bullets = [];
 
@@ -798,6 +798,7 @@ function clearCanvas()
 
 function startKeyHandler()
 {
+	keys = [];
 	$('html').keydown(function(event)
 	{
 		keys[event.key] = true;
@@ -812,6 +813,8 @@ function endKeyHandler()
 {
 	$('html').off("keydown");
 	$('html').off("keyup");
+	//reset the keys array
+	keys = [];
 }
 
 function applyScalingFactor()
